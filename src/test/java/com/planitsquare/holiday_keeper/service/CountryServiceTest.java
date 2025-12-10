@@ -19,6 +19,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import com.planitsquare.holiday_keeper.domain.entity.Country;
 import com.planitsquare.holiday_keeper.domain.repository.CountryRepository;
+import com.planitsquare.holiday_keeper.exception.CountryNotFoundException;
 import com.planitsquare.holiday_keeper.external.client.NagerDateClient;
 import com.planitsquare.holiday_keeper.external.dto.NagerCountryResponse;
 
@@ -51,15 +52,14 @@ class CountryServiceTest {
         // given
         final List<NagerCountryResponse> responses = Collections.singletonList(testCountryResponse);
         when(nagerDateClient.getAvailableCountries()).thenReturn(responses);
-        when(countryRepository.findByCountryCode("KR")).thenReturn(Optional.empty());
-        when(countryRepository.save(any(Country.class))).thenAnswer(invocation -> {
-            final Country country = invocation.getArgument(0);
-            final Country saved = Country.builder().countryCode(country.getCountryCode())
-                    .name(country.getName()).build();
-            org.springframework.test.util.ReflectionTestUtils.setField(saved, "id", 1L);
-            return saved;
+        when(countryRepository.findAllByCountryCodeIn(any(List.class)))
+                .thenReturn(Collections.emptyList());
+        when(countryRepository.saveAll(any(List.class))).thenAnswer(invocation -> {
+            final List<Country> countries = invocation.getArgument(0);
+            countries.forEach(country -> org.springframework.test.util.ReflectionTestUtils
+                    .setField(country, "id", 1L));
+            return countries;
         });
-        when(countryRepository.findAll()).thenReturn(Collections.singletonList(testCountry));
 
         // when
         final List<Country> result = countryService.fetchAndSaveAllCountries();
@@ -68,8 +68,8 @@ class CountryServiceTest {
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getCountryCode()).isEqualTo("KR");
         verify(nagerDateClient).getAvailableCountries();
-        verify(countryRepository).save(any(Country.class));
-        verify(countryRepository).findAll();
+        verify(countryRepository).findAllByCountryCodeIn(any(List.class));
+        verify(countryRepository).saveAll(any(List.class));
     }
 
     @Test
@@ -80,8 +80,8 @@ class CountryServiceTest {
         final Country existingCountry = Country.builder().countryCode("KR").name("Korea").build();
         org.springframework.test.util.ReflectionTestUtils.setField(existingCountry, "id", 1L);
         when(nagerDateClient.getAvailableCountries()).thenReturn(responses);
-        when(countryRepository.findByCountryCode("KR")).thenReturn(Optional.of(existingCountry));
-        when(countryRepository.findAll()).thenReturn(Collections.singletonList(testCountry));
+        when(countryRepository.findAllByCountryCodeIn(any(List.class)))
+                .thenReturn(Collections.singletonList(existingCountry));
 
         // when
         final List<Country> result = countryService.fetchAndSaveAllCountries();
@@ -90,8 +90,8 @@ class CountryServiceTest {
         assertThat(result).hasSize(1);
         assertThat(existingCountry.getName()).isEqualTo("South Korea");
         verify(nagerDateClient).getAvailableCountries();
-        verify(countryRepository, never()).save(any(Country.class));
-        verify(countryRepository).findAll();
+        verify(countryRepository).findAllByCountryCodeIn(any(List.class));
+        verify(countryRepository, never()).saveAll(any(List.class));
     }
 
     @Test
@@ -118,7 +118,7 @@ class CountryServiceTest {
 
         // when & then
         assertThatThrownBy(() -> countryService.findByCountryCode("XX"))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(CountryNotFoundException.class)
                 .hasMessageContaining("국가 코드 'XX'를 찾을 수 없습니다");
         verify(countryRepository).findByCountryCode("XX");
     }
@@ -144,7 +144,7 @@ class CountryServiceTest {
 
         // when & then
         assertThatThrownBy(() -> countryService.validateCountryExists("XX"))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(CountryNotFoundException.class)
                 .hasMessageContaining("국가 코드 'XX'를 찾을 수 없습니다");
         verify(countryRepository).existsByCountryCode("XX");
     }

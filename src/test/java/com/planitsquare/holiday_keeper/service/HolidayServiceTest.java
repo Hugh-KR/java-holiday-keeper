@@ -21,7 +21,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import com.planitsquare.holiday_keeper.domain.entity.Country;
-import com.planitsquare.holiday_keeper.domain.entity.PublicHoliday;
 import com.planitsquare.holiday_keeper.domain.repository.HolidayRepository;
 import com.planitsquare.holiday_keeper.external.client.NagerDateClient;
 import com.planitsquare.holiday_keeper.external.dto.NagerHolidayResponse;
@@ -64,7 +63,9 @@ class HolidayDataServiceTest {
         // given
         when(nagerDateClient.getPublicHolidays(2024, "KR"))
                 .thenReturn(Collections.singletonList(testHolidayResponse));
-        when(holidayRepository.save(any(PublicHoliday.class)))
+        when(holidayRepository.findByCountryCodeAndYear("KR", 2024))
+                .thenReturn(Collections.emptyList());
+        when(holidayRepository.saveAll(any(List.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         // when
@@ -72,8 +73,8 @@ class HolidayDataServiceTest {
 
         // then
         assertThat(count).isEqualTo(1);
-        verify(holidayRepository).deleteByCountryCodeAndYear("KR", 2024);
-        verify(holidayRepository).save(any(PublicHoliday.class));
+        verify(holidayRepository).findByCountryCodeAndYear("KR", 2024);
+        verify(holidayRepository).saveAll(any(List.class));
     }
 
     @Test
@@ -116,7 +117,7 @@ class HolidayDataServiceTest {
         when(countryService.fetchAndSaveAllCountries()).thenReturn(countries);
         when(nagerDateClient.getPublicHolidays(any(Integer.class), any(String.class)))
                 .thenReturn(Collections.singletonList(testHolidayResponse));
-        when(holidayRepository.save(any(PublicHoliday.class)))
+        when(holidayRepository.saveAll(any(List.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         // when
@@ -125,7 +126,7 @@ class HolidayDataServiceTest {
         // then
         assertThat(result).isGreaterThan(0);
         verify(countryService).fetchAndSaveAllCountries();
-        verify(holidayRepository, atLeastOnce()).save(any(PublicHoliday.class));
+        verify(holidayRepository, atLeastOnce()).saveAll(any(List.class));
     }
 
     @Test
@@ -141,7 +142,7 @@ class HolidayDataServiceTest {
         assertThat(count).isZero();
         verify(nagerDateClient).getPublicHolidays(2024, "KR");
         verify(holidayRepository, never()).deleteByCountryCodeAndYear(any(), any());
-        verify(holidayRepository, never()).save(any(PublicHoliday.class));
+        verify(holidayRepository, never()).saveAll(any(List.class));
     }
 
     @Test

@@ -30,6 +30,7 @@ class HolidayControllerTest {
     private MockMvc mockMvc;
 
     @MockBean
+    @SuppressWarnings("removal")
     private HolidayService holidayService;
 
     @Test

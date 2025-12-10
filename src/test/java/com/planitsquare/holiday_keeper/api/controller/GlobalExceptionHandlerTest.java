@@ -13,6 +13,8 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import com.planitsquare.holiday_keeper.exception.CountryNotFoundException;
+import com.planitsquare.holiday_keeper.exception.ExternalApiException;
 import com.planitsquare.holiday_keeper.service.HolidayService;
 
 @WebMvcTest(controllers = {HolidayController.class, GlobalExceptionHandler.class})
@@ -24,6 +26,7 @@ class GlobalExceptionHandlerTest {
     private MockMvc mockMvc;
 
     @MockBean
+    @SuppressWarnings("removal")
     private HolidayService holidayService;
 
     @Test
@@ -41,8 +44,7 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.errorCode").exists())
                 .andExpect(jsonPath("$.message").exists())
-                .andExpect(jsonPath("$.timestamp").exists())
-                .andExpect(jsonPath("$.path").exists());
+                .andExpect(jsonPath("$.timestamp").exists()).andExpect(jsonPath("$.path").exists());
     }
 
     @Test
@@ -58,8 +60,42 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.errorCode").exists())
                 .andExpect(jsonPath("$.message").exists())
-                .andExpect(jsonPath("$.timestamp").exists())
-                .andExpect(jsonPath("$.path").exists());
+                .andExpect(jsonPath("$.timestamp").exists()).andExpect(jsonPath("$.path").exists());
+    }
+
+    @Test
+    @DisplayName("CountryNotFoundException 처리 테스트")
+    void handleCountryNotFoundException() throws Exception {
+        // given
+        when(holidayService.searchHolidays(any())).thenThrow(new CountryNotFoundException("XX"));
+        final org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder request =
+                get("/api/v1/holidays/search").param("countryCode", "XX").param("year", "2024")
+                        .contentType(MediaType.APPLICATION_JSON);
+
+        // when & then
+        mockMvc.perform(request).andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.errorCode").exists())
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.timestamp").exists()).andExpect(jsonPath("$.path").exists());
+    }
+
+    @Test
+    @DisplayName("ExternalApiException 처리 테스트")
+    void handleExternalApiException() throws Exception {
+        // given
+        when(holidayService.searchHolidays(any()))
+                .thenThrow(new ExternalApiException("공휴일 조회", "외부 API 호출 실패"));
+        final org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder request =
+                get("/api/v1/holidays/search").param("countryCode", "KR").param("year", "2024")
+                        .contentType(MediaType.APPLICATION_JSON);
+
+        // when & then
+        mockMvc.perform(request).andExpect(status().isBadGateway())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.errorCode").exists())
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.timestamp").exists()).andExpect(jsonPath("$.path").exists());
     }
 
     @Test
@@ -77,7 +113,6 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.errorCode").exists())
                 .andExpect(jsonPath("$.message").exists())
-                .andExpect(jsonPath("$.timestamp").exists())
-                .andExpect(jsonPath("$.path").exists());
+                .andExpect(jsonPath("$.timestamp").exists()).andExpect(jsonPath("$.path").exists());
     }
 }

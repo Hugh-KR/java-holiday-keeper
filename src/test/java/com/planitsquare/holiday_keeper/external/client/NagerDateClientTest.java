@@ -100,7 +100,7 @@ class NagerDateClientTest {
     void getPublicHolidays_Success() {
         // given
         final NagerHolidayResponse holiday = new NagerHolidayResponse(LocalDate.of(2024, 1, 1),
-                "New Year's Day", "신정", "KR", true, false, null, 1949,
+                "신정", "New Year's Day", "KR", true, false, null, 1949,
                 Arrays.asList("Public"));
         final List<NagerHolidayResponse> holidays = Collections.singletonList(holiday);
         final ResponseEntity<List<NagerHolidayResponse>> responseEntity =
@@ -115,8 +115,8 @@ class NagerDateClientTest {
         // then
         assertThat(result).hasSize(1);
         assertThat(result.get(0).date()).isEqualTo(LocalDate.of(2024, 1, 1));
-        assertThat(result.get(0).localName()).isEqualTo("New Year's Day");
-        assertThat(result.get(0).name()).isEqualTo("신정");
+        assertThat(result.get(0).name()).isEqualTo("New Year's Day");
+        assertThat(result.get(0).localName()).isEqualTo("신정");
     }
 
     @Test
