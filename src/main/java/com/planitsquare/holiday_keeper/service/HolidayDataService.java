@@ -5,9 +5,13 @@ import static com.planitsquare.holiday_keeper.constants.LogMessage.LOAD_ALL_STAR
 import static com.planitsquare.holiday_keeper.constants.LogMessage.LOAD_HOLIDAYS_COMPLETED;
 import static com.planitsquare.holiday_keeper.constants.LogMessage.LOAD_HOLIDAYS_EMPTY;
 import static com.planitsquare.holiday_keeper.constants.LogMessage.LOAD_HOLIDAYS_FAILED;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,8 +45,7 @@ public class HolidayDataService {
         log.info(LOAD_ALL_START.getMessage(), startYear, endYear);
 
         final List<Country> countries = countryService.fetchAndSaveAllCountries();
-        final Map<String, Country> countryMap = buildCountryMap(countries);
-        final Integer totalLoaded = loadHolidaysForAllCountriesAndYears(countries, countryMap);
+        final Integer totalLoaded = loadHolidaysForAllCountriesAndYears(countries);
 
         log.info(LOAD_ALL_COMPLETED.getMessage(), totalLoaded);
         return totalLoaded;
@@ -59,8 +62,7 @@ public class HolidayDataService {
             return 0;
         }
 
-        deleteExistingHolidays(countryCode, year);
-        final Integer savedCount = saveHolidays(holidays, year, countryCode, country);
+        final Integer savedCount = upsertHolidays(holidays, year, countryCode, country);
 
         log.info(LOAD_HOLIDAYS_COMPLETED.getMessage(), year, countryCode, savedCount);
         return savedCount;
@@ -72,46 +74,90 @@ public class HolidayDataService {
         deleteExistingHolidays(countryCode, year);
     }
 
-    private Map<String, Country> buildCountryMap(final List<Country> countries) {
-        return countries.stream()
-                .collect(Collectors.toMap(Country::getCountryCode, country -> country));
+    private Integer loadHolidaysForAllCountriesAndYears(final List<Country> countries) {
+        return countries.stream().mapToInt(this::loadHolidaysForCountry).sum();
     }
 
-    private Integer loadHolidaysForAllCountriesAndYears(final List<Country> countries,
-            final Map<String, Country> countryMap) {
-        return countries.stream().mapToInt(country -> loadHolidaysForCountry(country, countryMap))
-                .sum();
-    }
-
-    private Integer loadHolidaysForCountry(final Country country,
-            final Map<String, Country> countryMap) {
+    private Integer loadHolidaysForCountry(final Country country) {
         final String countryCode = country.getCountryCode();
-        Integer loadedCount = 0;
+        return IntStream.rangeClosed(startYear, endYear)
+                .map(year -> loadHolidaysForSingleYear(year, countryCode, country)).sum();
+    }
 
-        for (Integer year = startYear; year <= endYear; year++) {
-            try {
-                final Integer loaded = loadHolidaysForYearAndCountry(year, countryCode,
-                        countryMap.get(countryCode));
-                loadedCount += loaded;
-                log.debug(LOAD_HOLIDAYS_COMPLETED.getMessage(), year, countryCode, loaded);
-            } catch (final RuntimeException e) {
-                log.error(LOAD_HOLIDAYS_FAILED.getMessage(), year, countryCode, e.getMessage());
-            }
+    private Integer loadHolidaysForSingleYear(final Integer year, final String countryCode,
+            final Country country) {
+        try {
+            final Integer loaded = loadHolidaysForYearAndCountry(year, countryCode, country);
+            log.debug(LOAD_HOLIDAYS_COMPLETED.getMessage(), year, countryCode, loaded);
+            return loaded;
+        } catch (final RuntimeException e) {
+            log.error(LOAD_HOLIDAYS_FAILED.getMessage(), year, countryCode, e.getMessage());
+            return 0;
         }
-        return loadedCount;
     }
 
     private void deleteExistingHolidays(final String countryCode, final Integer year) {
         holidayRepository.deleteByCountryCodeAndYear(countryCode, year);
     }
 
-    private Integer saveHolidays(final List<NagerHolidayResponse> holidays, final Integer year,
+    private Integer upsertHolidays(final List<NagerHolidayResponse> holidays, final Integer year,
             final String countryCode, final Country country) {
-        final List<PublicHoliday> holidayEntities = holidays.stream().map(
-                holidayResponse -> convertToEntity(holidayResponse, year, countryCode, country))
-                .toList();
-        holidayRepository.saveAll(holidayEntities);
-        return holidayEntities.size();
+        final Map<LocalDate, PublicHoliday> existingHolidaysMap =
+                buildExistingHolidaysMap(countryCode, year);
+        final Set<LocalDate> newHolidayDates = extractHolidayDates(holidays);
+        final List<PublicHoliday> holidaysToSave =
+                processHolidays(holidays, year, countryCode, country, existingHolidaysMap);
+
+        deleteRemovedHolidays(existingHolidaysMap, newHolidayDates);
+
+        if (!holidaysToSave.isEmpty()) {
+            holidayRepository.saveAll(holidaysToSave);
+        }
+
+        return holidaysToSave.size();
+    }
+
+    private Map<LocalDate, PublicHoliday> buildExistingHolidaysMap(final String countryCode,
+            final Integer year) {
+        return holidayRepository.findByCountryCodeAndYear(countryCode, year).stream()
+                .collect(Collectors.toMap(PublicHoliday::getDate, holiday -> holiday));
+    }
+
+    private Set<LocalDate> extractHolidayDates(final List<NagerHolidayResponse> holidays) {
+        return holidays.stream().map(NagerHolidayResponse::date).collect(Collectors.toSet());
+    }
+
+    private void deleteRemovedHolidays(final Map<LocalDate, PublicHoliday> existingHolidaysMap,
+            final Set<LocalDate> newHolidayDates) {
+        final List<PublicHoliday> holidaysToDelete = existingHolidaysMap.values().stream()
+                .filter(holiday -> !newHolidayDates.contains(holiday.getDate())).toList();
+
+        if (!holidaysToDelete.isEmpty()) {
+            holidayRepository.deleteAll(holidaysToDelete);
+        }
+    }
+
+    private List<PublicHoliday> processHolidays(final List<NagerHolidayResponse> holidays,
+            final Integer year, final String countryCode, final Country country,
+            final Map<LocalDate, PublicHoliday> existingHolidaysMap) {
+        final List<PublicHoliday> holidaysToSave = new ArrayList<>();
+
+        for (final NagerHolidayResponse response : holidays) {
+            final PublicHoliday existingHoliday = existingHolidaysMap.get(response.date());
+
+            if (existingHoliday != null) {
+                final PublicHoliday updatedHoliday =
+                        convertToEntity(response, year, countryCode, country);
+                existingHoliday.updateFrom(updatedHoliday);
+                holidaysToSave.add(existingHoliday);
+            } else {
+                final PublicHoliday newHoliday =
+                        convertToEntity(response, year, countryCode, country);
+                holidaysToSave.add(newHoliday);
+            }
+        }
+
+        return holidaysToSave;
     }
 
     private PublicHoliday convertToEntity(final NagerHolidayResponse response, final Integer year,
@@ -127,16 +173,16 @@ public class HolidayDataService {
                 : HolidayType.getDefaultValue();
     }
 
-    private Boolean extractFixed(final NagerHolidayResponse response) {
+    private boolean extractFixed(final NagerHolidayResponse response) {
         return extractBooleanOrDefault(response.fixed());
     }
 
-    private Boolean extractGlobal(final NagerHolidayResponse response) {
+    private boolean extractGlobal(final NagerHolidayResponse response) {
         return extractBooleanOrDefault(response.global());
     }
 
-    private Boolean extractBooleanOrDefault(final Boolean value) {
-        return value != null ? value : Boolean.FALSE;
+    private boolean extractBooleanOrDefault(final Boolean value) {
+        return value != null ? value : false;
     }
 
     private String extractLaunchYear(final NagerHolidayResponse response) {

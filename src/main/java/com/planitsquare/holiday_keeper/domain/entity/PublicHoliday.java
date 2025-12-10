@@ -19,6 +19,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "public_holidays",
         indexes = {@Index(name = "idx_country_year", columnList = "country_id,holiday_year"),
+                @Index(name = "idx_country_code_year", columnList = "country_code,holiday_year"),
                 @Index(name = "idx_date", columnList = "date"),
                 @Index(name = "idx_type", columnList = "types")})
 @Getter

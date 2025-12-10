@@ -11,6 +11,7 @@ import com.planitsquare.holiday_keeper.domain.entity.PublicHoliday;
 import com.planitsquare.holiday_keeper.domain.entity.QPublicHoliday;
 import com.planitsquare.holiday_keeper.domain.repository.HolidayRepository;
 import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 
@@ -32,8 +33,19 @@ public class HolidayRepositoryImpl implements HolidayRepository {
     }
 
     @Override
+    public void deleteAll(final List<PublicHoliday> holidays) {
+        jpaRepository.deleteAll(holidays);
+    }
+
+    @Override
     public Boolean existsByCountryCodeAndYear(final String countryCode, final Integer year) {
         return jpaRepository.existsByCountryCodeAndYear(countryCode, year);
+    }
+
+    @Override
+    public List<PublicHoliday> findByCountryCodeAndYear(final String countryCode,
+            final Integer year) {
+        return jpaRepository.findByCountryCodeAndYear(countryCode, year);
     }
 
     @Override
@@ -96,12 +108,13 @@ public class HolidayRepositoryImpl implements HolidayRepository {
     }
 
     private Long countTotalHolidays(final QPublicHoliday holiday, final BooleanBuilder builder) {
-        return (long) queryFactory.selectFrom(holiday).where(builder).fetch().size();
+        return queryFactory.select(Expressions.ONE.count()).from(holiday).where(builder).fetchOne();
     }
 
     private List<PublicHoliday> fetchHolidaysWithPaging(final QPublicHoliday holiday,
             final BooleanBuilder builder, final Pageable pageable) {
-        return queryFactory.selectFrom(holiday).where(builder).orderBy(holiday.date.asc())
-                .offset(pageable.getOffset()).limit(pageable.getPageSize()).fetch();
+        return queryFactory.selectFrom(holiday).innerJoin(holiday.country).fetchJoin()
+                .where(builder).orderBy(holiday.date.asc()).offset(pageable.getOffset())
+                .limit(pageable.getPageSize()).fetch();
     }
 }

@@ -19,8 +19,23 @@ public class CountryRepositoryImpl implements CountryRepository {
     }
 
     @Override
+    public List<Country> saveAll(final List<Country> countries) {
+        return jpaRepository.saveAll(countries);
+    }
+
+    @Override
     public List<Country> findAll() {
         return jpaRepository.findAll();
+    }
+
+    @Override
+    public List<Country> findAllByCountryCodeIn(final List<String> countryCodes) {
+        return jpaRepository.findAllByCountryCodeIn(countryCodes);
+    }
+
+    @Override
+    public List<String> findAllCountryCodes() {
+        return jpaRepository.findAllCountryCodes();
     }
 
     @Override

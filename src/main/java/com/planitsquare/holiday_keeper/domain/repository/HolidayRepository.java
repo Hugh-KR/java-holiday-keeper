@@ -12,7 +12,11 @@ public interface HolidayRepository {
 
     List<PublicHoliday> saveAll(List<PublicHoliday> holidays);
 
+    void deleteAll(List<PublicHoliday> holidays);
+
     Boolean existsByCountryCodeAndYear(String countryCode, Integer year);
+
+    List<PublicHoliday> findByCountryCodeAndYear(String countryCode, Integer year);
 
     void deleteByCountryCodeAndYear(String countryCode, Integer year);
 
