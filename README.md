@@ -473,6 +473,7 @@ open build/reports/jacoco/test/html/index.html
 - `constants` - 상수 정의
 - `dto` - 데이터 전송 객체
 - `entity` - JPA 엔티티
+- `exception` - Custom Exception 클래스 (단순 데이터 클래스)
 - `scheduler` - 스케줄러 (선택적)
 - `infrastructure.persistence` - Querydsl 구현체
 
@@ -742,6 +743,53 @@ public class HolidayService {
 - **명확성**: 각 메서드의 트랜잭션 범위가 명확하게 드러남
 - **데이터 일관성**: 쓰기 작업의 트랜잭션 경계가 명확하여 일관성 보장
 
+### 7. Custom Exception 구현
+
+비즈니스 예외와 시스템 예외를 **명확히 구분**하여 예외 처리를 체계화했습니다.
+
+#### 구현 내용
+
+- **`CountryNotFoundException`**: 국가 코드를 찾을 수 없을 때 발생 (HTTP 404)
+- **`ExternalApiException`**: 외부 API 호출 실패 시 발생 (HTTP 502)
+- **상수 관리**: 예외 메시지를 `ErrorMessage` enum으로 중앙 관리
+
+#### 코드 예시
+
+```java
+// Custom Exception 정의
+public class CountryNotFoundException extends RuntimeException {
+    private final String countryCode;
+
+    public CountryNotFoundException(final String countryCode) {
+        super(COUNTRY_NOT_FOUND.getMessage().formatted(countryCode));
+        this.countryCode = countryCode;
+    }
+}
+
+// 서비스에서 사용
+public Country findByCountryCode(final String countryCode) {
+    return countryRepository.findByCountryCode(countryCode)
+            .orElseThrow(() -> new CountryNotFoundException(countryCode));
+}
+
+// 전역 예외 핸들러에서 처리
+@ExceptionHandler(CountryNotFoundException.class)
+public ResponseEntity<ApiResponse<?>> handleCountryNotFoundException(
+        final CountryNotFoundException e, final WebRequest request) {
+    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            .body(ApiResponse.error(ErrorCode.COUNTRY_NOT_FOUND.getCode(),
+                    e.getMessage(), extractPath(request)));
+}
+```
+
+#### 효과
+
+- **명확한 예외 타입**: 비즈니스 예외와 시스템 예외를 타입으로 구분
+- **적절한 HTTP 상태 코드**: 예외별로 적절한 HTTP 상태 코드 반환 (404, 502 등)
+- **예외 처리 명확화**: `GlobalExceptionHandler`에서 예외별로 다른 처리 가능
+- **유지보수성 향상**: 예외 타입만으로도 의도를 명확히 파악 가능
+- **상수 관리**: 예외 메시지를 중앙에서 관리하여 일관성 보장
+
 ## 📊 코드 품질 지표
 
 | 항목              | 적용 여부 | 비고                                         |
@@ -752,6 +800,7 @@ public class HolidayService {
 | **디미터 법칙**   | ✅        | 메서드 체이닝 최소화, 의도 명확화            |
 | **함수 분리**     | ✅        | 단일 책임 원칙 준수, 작은 단위 함수          |
 | **트랜잭션 관리** | ✅        | 읽기/쓰기 명시적 구분                        |
+| **Custom Exception** | ✅    | 비즈니스 예외 타입화, 적절한 HTTP 상태 코드   |
 
 ## ⏰ 배치 스케줄러
 
@@ -776,6 +825,7 @@ holiday-keeper/
 │   │   │   ├── config/                 # 설정 클래스
 │   │   │   ├── constants/              # 상수 정의
 │   │   │   ├── domain/                 # 도메인 계층
+│   │   │   ├── exception/              # Custom Exception
 │   │   │   │   ├── entity/             # 엔티티
 │   │   │   │   └── repository/         # Repository 인터페이스
 │   │   │   ├── external/               # 외부 API 연동
