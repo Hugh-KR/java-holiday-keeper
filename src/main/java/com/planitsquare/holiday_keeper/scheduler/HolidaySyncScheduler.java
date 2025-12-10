@@ -5,7 +5,6 @@ import java.util.List;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import com.planitsquare.holiday_keeper.constants.LogMessage;
-import com.planitsquare.holiday_keeper.domain.entity.Country;
 import com.planitsquare.holiday_keeper.service.CountryService;
 import com.planitsquare.holiday_keeper.service.HolidayService;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +37,7 @@ public class HolidaySyncScheduler {
     }
 
     private List<String> getAllCountryCodes() {
-        return countryService.findAll().stream().map(Country::getCountryCode).toList();
+        return countryService.findAllCountryCodes();
     }
 
     private Integer syncAllCountries(final List<String> countryCodes, final Integer previousYear,

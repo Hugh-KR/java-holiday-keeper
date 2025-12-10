@@ -2,6 +2,7 @@ package com.planitsquare.holiday_keeper.api.controller;
 
 import static com.planitsquare.holiday_keeper.constants.ErrorMessage.VALIDATION_FIELDS_SEPARATOR;
 import static com.planitsquare.holiday_keeper.constants.ErrorMessage.VALIDATION_FIELD_SEPARATOR;
+import static com.planitsquare.holiday_keeper.constants.LogMessage.COUNTRY_NOT_FOUND_EXCEPTION;
 import static com.planitsquare.holiday_keeper.constants.LogMessage.EXTERNAL_API_EXCEPTION;
 import static com.planitsquare.holiday_keeper.constants.LogMessage.ILLEGAL_ARGUMENT_EXCEPTION;
 import static com.planitsquare.holiday_keeper.constants.LogMessage.RUNTIME_EXCEPTION;
@@ -27,7 +28,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CountryNotFoundException.class)
     public ResponseEntity<ApiResponse<?>> handleCountryNotFoundException(
             final CountryNotFoundException e, final WebRequest request) {
-        log.warn(ILLEGAL_ARGUMENT_EXCEPTION.getMessage(), e.getMessage());
+        log.warn(COUNTRY_NOT_FOUND_EXCEPTION.getMessage(), e.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(
                 ErrorCode.COUNTRY_NOT_FOUND.getCode(), e.getMessage(), extractPath(request)));
     }

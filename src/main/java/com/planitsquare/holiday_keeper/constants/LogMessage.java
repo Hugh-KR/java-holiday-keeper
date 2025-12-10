@@ -49,13 +49,13 @@ public enum LogMessage {
 
     EXTERNAL_API_HOLIDAYS_FAILED("Failed to fetch holidays from Nager.Date API for {}/{}"),
 
-    EXTERNAL_API_RETRY("외부 API 재시도: {} (시도 횟수: {}/3)"),
+    EXTERNAL_API_RETRY("외부 API 재시도: {} - {}"),
 
     EXTERNAL_API_RETRY_SKIPPED("외부 API 재시도 모두 실패, 요청 건너뜀: {}"),
 
-    EXTERNAL_API_OPERATION_COUNTRIES("국가 목록 조회"),
+    EXTERNAL_API_OPERATION_COUNTRIES("Nager.Date API 국가 목록 조회"),
 
-    EXTERNAL_API_OPERATION_HOLIDAYS("공휴일 조회"),
+    EXTERNAL_API_OPERATION_HOLIDAYS("Nager.Date API 공휴일 조회"),
 
     EXTERNAL_API_RETRY_STATUS("재시도 중"),
 
@@ -67,7 +67,9 @@ public enum LogMessage {
 
     UNEXPECTED_EXCEPTION("예상치 못한 예외 발생"),
 
-    EXTERNAL_API_EXCEPTION("ExternalApiException: {}");
+    EXTERNAL_API_EXCEPTION("ExternalApiException: {}"),
+
+    COUNTRY_NOT_FOUND_EXCEPTION("국가를 찾을 수 없습니다: {}");
 
     private final String message;
 

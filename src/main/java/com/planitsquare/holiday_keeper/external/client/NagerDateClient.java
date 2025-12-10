@@ -61,7 +61,7 @@ public class NagerDateClient {
     }
 
     private String buildCountriesUrl() {
-        return baseUrl + "/AvailableCountries";
+        return "%s/AvailableCountries".formatted(baseUrl);
     }
 
     private List<NagerCountryResponse> fetchCountries(final String url) {
@@ -70,7 +70,6 @@ public class NagerDateClient {
                         new ParameterizedTypeReference<List<NagerCountryResponse>>() {});
         return extractResponseBody(response);
     }
-
 
     @Retryable(retryFor = {RestClientException.class}, maxAttempts = 3,
             backoff = @Backoff(delay = 1000, multiplier = 2))
