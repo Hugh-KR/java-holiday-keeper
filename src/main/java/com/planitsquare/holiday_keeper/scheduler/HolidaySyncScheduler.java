@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import com.planitsquare.holiday_keeper.constants.LogMessage;
+import com.planitsquare.holiday_keeper.domain.entity.Country;
 import com.planitsquare.holiday_keeper.service.CountryService;
 import com.planitsquare.holiday_keeper.service.HolidayService;
 import lombok.RequiredArgsConstructor;
@@ -23,46 +24,39 @@ public class HolidaySyncScheduler {
         log.info(LogMessage.SYNC_START.getMessage());
 
         try {
-            final Integer[] targetYears = getTargetYears();
-            log.info(LogMessage.SYNC_YEARS.getMessage(), targetYears[0], targetYears[1]);
+            final Integer currentYear = LocalDate.now().getYear();
+            final Integer previousYear = currentYear - 1;
+            log.info(LogMessage.SYNC_YEARS.getMessage(), previousYear, currentYear);
 
             final List<String> countryCodes = getAllCountryCodes();
-            final Integer totalSynced = syncAllCountries(countryCodes, targetYears);
+            final Integer totalSynced = syncAllCountries(countryCodes, previousYear, currentYear);
 
             log.info(LogMessage.SYNC_ALL_COMPLETED.getMessage(), totalSynced);
-        } catch (final Exception e) {
+        } catch (final RuntimeException e) {
             log.error(LogMessage.SYNC_ERROR.getMessage(), e);
         }
     }
 
-    private Integer[] getTargetYears() {
-        final Integer currentYear = LocalDate.now().getYear();
-        final Integer previousYear = currentYear - 1;
-        return new Integer[] {previousYear, currentYear};
-    }
-
     private List<String> getAllCountryCodes() {
-        return countryService.findAll().stream()
-                .map(com.planitsquare.holiday_keeper.domain.entity.Country::getCountryCode)
-                .toList();
+        return countryService.findAll().stream().map(Country::getCountryCode).toList();
     }
 
-    private Integer syncAllCountries(final List<String> countryCodes, final Integer[] targetYears) {
-        Integer totalSynced = 0;
-        for (final String countryCode : countryCodes) {
-            totalSynced += syncSingleCountry(countryCode, targetYears);
-        }
-        return totalSynced;
+    private Integer syncAllCountries(final List<String> countryCodes, final Integer previousYear,
+            final Integer currentYear) {
+        return countryCodes.stream()
+                .mapToInt(countryCode -> syncSingleCountry(countryCode, previousYear, currentYear))
+                .sum();
     }
 
-    private Integer syncSingleCountry(final String countryCode, final Integer[] targetYears) {
+    private Integer syncSingleCountry(final String countryCode, final Integer previousYear,
+            final Integer currentYear) {
         try {
-            final Integer count1 = syncCountryForYear(targetYears[0], countryCode);
-            final Integer count2 = syncCountryForYear(targetYears[1], countryCode);
+            final Integer count1 = syncCountryForYear(previousYear, countryCode);
+            final Integer count2 = syncCountryForYear(currentYear, countryCode);
             return count1 + count2;
-        } catch (final Exception e) {
-            log.error(LogMessage.SYNC_FAILED.getMessage(), targetYears[0], targetYears[1],
-                    countryCode, e.getMessage());
+        } catch (final RuntimeException e) {
+            log.error(LogMessage.SYNC_FAILED.getMessage(), previousYear, currentYear, countryCode,
+                    e.getMessage());
             return 0;
         }
     }

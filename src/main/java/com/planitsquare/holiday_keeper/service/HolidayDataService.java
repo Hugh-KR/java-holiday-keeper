@@ -79,11 +79,8 @@ public class HolidayDataService {
 
     private Integer loadHolidaysForAllCountriesAndYears(final List<Country> countries,
             final Map<String, Country> countryMap) {
-        Integer totalLoaded = 0;
-        for (final Country country : countries) {
-            totalLoaded += loadHolidaysForCountry(country, countryMap);
-        }
-        return totalLoaded;
+        return countries.stream().mapToInt(country -> loadHolidaysForCountry(country, countryMap))
+                .sum();
     }
 
     private Integer loadHolidaysForCountry(final Country country,
@@ -97,7 +94,7 @@ public class HolidayDataService {
                         countryMap.get(countryCode));
                 loadedCount += loaded;
                 log.debug(LOAD_HOLIDAYS_COMPLETED.getMessage(), year, countryCode, loaded);
-            } catch (final Exception e) {
+            } catch (final RuntimeException e) {
                 log.error(LOAD_HOLIDAYS_FAILED.getMessage(), year, countryCode, e.getMessage());
             }
         }
@@ -110,14 +107,11 @@ public class HolidayDataService {
 
     private Integer saveHolidays(final List<NagerHolidayResponse> holidays, final Integer year,
             final String countryCode, final Country country) {
-        Integer savedCount = 0;
-        for (final NagerHolidayResponse holidayResponse : holidays) {
-            final PublicHoliday holiday =
-                    convertToEntity(holidayResponse, year, countryCode, country);
-            holidayRepository.save(holiday);
-            savedCount++;
-        }
-        return savedCount;
+        final List<PublicHoliday> holidayEntities = holidays.stream().map(
+                holidayResponse -> convertToEntity(holidayResponse, year, countryCode, country))
+                .toList();
+        holidayRepository.saveAll(holidayEntities);
+        return holidayEntities.size();
     }
 
     private PublicHoliday convertToEntity(final NagerHolidayResponse response, final Integer year,

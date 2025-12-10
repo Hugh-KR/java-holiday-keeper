@@ -2,7 +2,6 @@ package com.planitsquare.holiday_keeper.service;
 
 import static com.planitsquare.holiday_keeper.constants.LogMessage.REFRESH_START;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -65,6 +64,6 @@ public class HolidayService {
     }
 
     private List<HolidayResponse> convertToHolidayResponses(final List<PublicHoliday> holidays) {
-        return holidays.stream().map(HolidayResponse::from).collect(Collectors.toList());
+        return holidays.stream().map(HolidayResponse::from).toList();
     }
 }

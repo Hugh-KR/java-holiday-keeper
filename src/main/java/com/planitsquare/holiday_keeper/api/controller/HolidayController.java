@@ -66,9 +66,9 @@ public class HolidayController {
                     required = true) @PathVariable final String countryCode) {
         log.info(LogMessage.REFRESH_REQUEST.getMessage(), year, countryCode);
         final Integer count = holidayService.refreshHolidays(year, countryCode);
-        return ResponseEntity
-                .ok(ApiResponse.success(String.format(SuccessMessage.REFRESH_COMPLETED.getMessage(),
-                        year, countryCode, count), null));
+        return ResponseEntity.ok(ApiResponse.success(
+                SuccessMessage.REFRESH_COMPLETED.getMessage().formatted(year, countryCode, count),
+                null));
     }
 
     @DeleteMapping("/{year}/{countryCode}")
@@ -84,7 +84,6 @@ public class HolidayController {
         log.info(LogMessage.DELETE_REQUEST.getMessage(), year, countryCode);
         holidayService.deleteHolidays(year, countryCode);
         return ResponseEntity.ok(ApiResponse.success(
-                String.format(SuccessMessage.DELETE_COMPLETED.getMessage(), year, countryCode),
-                null));
+                SuccessMessage.DELETE_COMPLETED.getMessage().formatted(year, countryCode), null));
     }
 }

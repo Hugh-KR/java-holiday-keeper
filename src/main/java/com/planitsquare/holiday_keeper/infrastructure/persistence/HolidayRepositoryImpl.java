@@ -27,6 +27,11 @@ public class HolidayRepositoryImpl implements HolidayRepository {
     }
 
     @Override
+    public List<PublicHoliday> saveAll(final List<PublicHoliday> holidays) {
+        return jpaRepository.saveAll(holidays);
+    }
+
+    @Override
     public Boolean existsByCountryCodeAndYear(final String countryCode, final Integer year) {
         return jpaRepository.existsByCountryCodeAndYear(countryCode, year);
     }
@@ -91,7 +96,7 @@ public class HolidayRepositoryImpl implements HolidayRepository {
     }
 
     private Long countTotalHolidays(final QPublicHoliday holiday, final BooleanBuilder builder) {
-        return queryFactory.selectFrom(holiday).where(builder).fetchCount();
+        return (long) queryFactory.selectFrom(holiday).where(builder).fetch().size();
     }
 
     private List<PublicHoliday> fetchHolidaysWithPaging(final QPublicHoliday holiday,

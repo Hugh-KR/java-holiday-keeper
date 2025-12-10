@@ -85,8 +85,7 @@ public class NagerDateClient {
                     year);
             return holidays;
         } catch (final RestClientException e) {
-            final String operation = "%s (%s/%d)"
-                    .formatted(EXTERNAL_API_OPERATION_HOLIDAYS.getMessage(), countryCode, year);
+            final String operation = buildHolidaysOperation(countryCode, year);
             log.warn(EXTERNAL_API_RETRY.getMessage(), operation,
                     EXTERNAL_API_RETRY_STATUS.getMessage());
             throw e;
@@ -96,10 +95,14 @@ public class NagerDateClient {
     @Recover
     public List<NagerHolidayResponse> recoverHolidays(final RestClientException e,
             final Integer year, final String countryCode) {
-        final String operation = "%s (%s/%d)"
-                .formatted(EXTERNAL_API_OPERATION_HOLIDAYS.getMessage(), countryCode, year);
+        final String operation = buildHolidaysOperation(countryCode, year);
         log.error(EXTERNAL_API_RETRY_SKIPPED.getMessage(), operation);
         return Collections.emptyList();
+    }
+
+    private String buildHolidaysOperation(final String countryCode, final Integer year) {
+        return "%s (%s/%d)".formatted(EXTERNAL_API_OPERATION_HOLIDAYS.getMessage(), countryCode,
+                year);
     }
 
     private String buildHolidaysUrl(final Integer year, final String countryCode) {
