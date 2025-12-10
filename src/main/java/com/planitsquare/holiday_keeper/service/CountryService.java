@@ -1,12 +1,12 @@
 package com.planitsquare.holiday_keeper.service;
 
-import static com.planitsquare.holiday_keeper.constants.ErrorMessage.COUNTRY_NOT_FOUND;
 import static com.planitsquare.holiday_keeper.constants.LogMessage.COUNTRIES_FOUND;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.planitsquare.holiday_keeper.domain.entity.Country;
 import com.planitsquare.holiday_keeper.domain.repository.CountryRepository;
+import com.planitsquare.holiday_keeper.exception.CountryNotFoundException;
 import com.planitsquare.holiday_keeper.external.client.NagerDateClient;
 import com.planitsquare.holiday_keeper.external.dto.NagerCountryResponse;
 import lombok.RequiredArgsConstructor;
@@ -33,18 +33,13 @@ public class CountryService {
 
     public Country findByCountryCode(final String countryCode) {
         return countryRepository.findByCountryCode(countryCode)
-                .orElseThrow(() -> createCountryNotFoundException(countryCode));
+                .orElseThrow(() -> new CountryNotFoundException(countryCode));
     }
 
     public void validateCountryExists(final String countryCode) {
         if (!countryRepository.existsByCountryCode(countryCode)) {
-            throw createCountryNotFoundException(countryCode);
+            throw new CountryNotFoundException(countryCode);
         }
-    }
-
-    private IllegalArgumentException createCountryNotFoundException(final String countryCode) {
-        return new IllegalArgumentException(
-                String.format(COUNTRY_NOT_FOUND.getMessage(), countryCode));
     }
 
     public List<Country> findAll() {
