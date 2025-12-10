@@ -3,12 +3,14 @@
 ## 📋 프로젝트 개요
 
 Holiday Keeper는 [Nager.Date API](https://date.nager.at/)를 활용하여 2020-2025년
-전 세계 공휴일 데이터를 수집하고 관리하는 Spring Boot 기반 REST API 서비스입니다.
+전 세계 공휴일 데이터를 수집하고 관리하는 Spring Boot 기반 REST API 서비스입니다
+.
 
 ### 주요 기능
 
 - ✅ **데이터 적재**: 최근 5년(2020-2025) 전 세계 공휴일 데이터 일괄 적재
-- 🔍 **검색**: 연도별, 국가별, 날짜 범위, 공휴일 타입 등 다양한 필터로 검색 (페이징 지원)
+- 🔍 **검색**: 연도별, 국가별, 날짜 범위, 공휴일 타입 등 다양한 필터로 검색 (페
+  이징 지원)
 - 🔄 **재동기화**: 특정 연도·국가 데이터를 외부 API에서 재조회하여 업데이트
 - 🗑️ **삭제**: 특정 연도·국가의 공휴일 레코드 삭제
 - ⏰ **배치 자동화**: 매년 1월 2일 01:00 KST에 전년도·금년도 데이터 자동 동기화
@@ -93,7 +95,8 @@ erDiagram
 
 - `idx_country_code` (country_code) - UNIQUE
 - `idx_country_year` (country_id, holiday_year) - 복합 인덱스
-- `idx_country_code_year` (country_code, holiday_year) - 복합 인덱스 (성능 최적화)
+- `idx_country_code_year` (country_code, holiday_year) - 복합 인덱스 (성능 최적
+  화)
 - `idx_date` (date)
 - `idx_type` (types)
 
@@ -139,8 +142,9 @@ erDiagram
 
 ### 테스트 리포트
 
-- **테스트 리포트**: [docs/test-report/index.html](docs/test-report/index.html)
-- **JaCoCo 커버리지 리포트**: [docs/jacoco-report/index.html](docs/jacoco-report/index.html)
+![테스트 리포트](docs/test.png)
+
+![JaCoCo 커버리지 리포트](docs/jacoco.png)
 
 ---
 
@@ -244,9 +248,12 @@ sequenceDiagram
 
 **핵심 설계 포인트**
 
-- **Querydsl 활용**: 타입 안전한 동적 쿼리 생성 (조건이 없어도, 하나만 있어도, 여러 개 있어도 모두 처리)
-- **Fetch Join**: Country 정보를 한 번에 조회하여 N+1 문제 해결 (21번 쿼리 → 1번 쿼리)
-- **인덱스 활용**: 자주 사용되는 검색 조건에 인덱스 적용 (Full Table Scan → Index Scan)
+- **Querydsl 활용**: 타입 안전한 동적 쿼리 생성 (조건이 없어도, 하나만 있어도,
+  여러 개 있어도 모두 처리)
+- **Fetch Join**: Country 정보를 한 번에 조회하여 N+1 문제 해결 (21번 쿼리 → 1번
+  쿼리)
+- **인덱스 활용**: 자주 사용되는 검색 조건에 인덱스 적용 (Full Table Scan →
+  Index Scan)
 
 ### 3. 재동기화 (요구사항: 특정 연도·국가 Upsert)
 
