@@ -13,7 +13,13 @@ public enum ErrorMessage {
 
     UNEXPECTED_ERROR("예상치 못한 오류가 발생했습니다"),
 
-    YEAR_MUST_BE_AFTER("연도는 %d년 이후여야 합니다");
+    YEAR_MUST_BE_AFTER("연도는 %d년 이후여야 합니다"),
+
+    EXTERNAL_API_CALL_FAILED("외부 API 호출 실패: %s - %s"),
+
+    VALIDATION_FIELD_SEPARATOR(": "),
+
+    VALIDATION_FIELDS_SEPARATOR(", ");
 
     private final String message;
 

@@ -57,7 +57,17 @@ public enum LogMessage {
 
     EXTERNAL_API_OPERATION_HOLIDAYS("공휴일 조회"),
 
-    EXTERNAL_API_RETRY_STATUS("재시도 중");
+    EXTERNAL_API_RETRY_STATUS("재시도 중"),
+
+    ILLEGAL_ARGUMENT_EXCEPTION("잘못된 파라미터: {}"),
+
+    VALIDATION_EXCEPTION("유효성 검증 실패: {}"),
+
+    RUNTIME_EXCEPTION("런타임 예외 발생"),
+
+    UNEXPECTED_EXCEPTION("예상치 못한 예외 발생"),
+
+    EXTERNAL_API_EXCEPTION("ExternalApiException: {}");
 
     private final String message;
 

@@ -1,11 +1,13 @@
 package com.planitsquare.holiday_keeper.api.dto.response;
 
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
+import static com.planitsquare.holiday_keeper.constants.SuccessMessage.REQUEST_PROCESSED;
 import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "API 응답")
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonInclude(NON_NULL)
 public record ApiResponse<T>(@Schema(description = "성공 여부", example = "true") Boolean success,
         @Schema(description = "응답 메시지", example = "요청이 성공적으로 처리되었습니다") String message,
         @Schema(description = "응답 데이터") T data,
@@ -14,7 +16,8 @@ public record ApiResponse<T>(@Schema(description = "성공 여부", example = "t
         @Schema(description = "요청 경로", example = "/api/v1/holidays/search") String path) {
 
     public static <T> ApiResponse<T> success(final T data) {
-        return new ApiResponse<>(true, "요청이 성공적으로 처리되었습니다", data, null, LocalDateTime.now(), null);
+        return new ApiResponse<>(true, REQUEST_PROCESSED.getMessage(), data, null,
+                LocalDateTime.now(), null);
     }
 
     public static <T> ApiResponse<T> success(final String message, final T data) {
