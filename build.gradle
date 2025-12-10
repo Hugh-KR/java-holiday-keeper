@@ -1,0 +1,157 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.4.12'
+	id 'io.spring.dependency-management' version '1.1.7'
+	id 'jacoco'
+}
+
+group = 'com.planitsquare'
+version = '0.0.1-SNAPSHOT'
+description = 'Holiday Keeper - 전 세계 공휴일 관리 서비스'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	// Spring Boot Starters
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springframework.boot:spring-boot-starter-aop'
+
+	// Spring Retry
+	implementation 'org.springframework.retry:spring-retry'
+
+	// Querydsl
+	implementation 'com.querydsl:querydsl-jpa:5.1.0:jakarta'
+	annotationProcessor 'com.querydsl:querydsl-apt:5.1.0:jakarta'
+	annotationProcessor 'jakarta.annotation:jakarta.annotation-api'
+	annotationProcessor 'jakarta.persistence:jakarta.persistence-api'
+
+	// Swagger/OpenAPI
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.4'
+
+	// Lombok
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+
+	// Database
+	runtimeOnly 'com.h2database:h2'
+
+	// Development
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+	// Testing
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+	testImplementation 'org.testcontainers:junit-jupiter'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+def querydslDir = "$buildDir/generated/querydsl"
+
+sourceSets {
+	main.java.srcDirs += [ querydslDir ]
+}
+
+tasks.named('compileJava') {
+	options.annotationProcessorGeneratedSourcesDirectory = file(querydslDir)
+}
+
+clean {
+	delete file(querydslDir)
+}
+
+def loadEnvFile() {
+	def envVars = [:]
+	def envFile = file('.env')
+	if (envFile.exists()) {
+		envFile.readLines().each { line ->
+			if (line && !line.startsWith('#') && line.contains('=')) {
+				def (key, value) = line.split('=', 2)
+				envVars[key.trim()] = value.trim()
+			}
+		}
+	}
+	return envVars
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+	finalizedBy jacocoTestReport
+}
+
+jacoco {
+	toolVersion = "0.8.11"
+}
+
+jacocoTestReport {
+	dependsOn test
+	reports {
+		xml.required = true
+		html.required = true
+		csv.required = false
+	}
+	afterEvaluate {
+		classDirectories.setFrom(files(classDirectories.files.collect {
+			fileTree(dir: it, exclude: [
+				'**/config/**',
+				'**/constants/**',
+				'**/dto/**',
+				'**/entity/**',
+				'**/HolidayKeeperApplication.class',
+				'**/scheduler/**',
+				'**/infrastructure/persistence/**'
+			])
+		}))
+	}
+	finalizedBy jacocoTestCoverageVerification
+}
+
+jacocoTestCoverageVerification {
+	violationRules {
+		rule {
+			limit {
+				minimum = 0.70
+			}
+		}
+		rule {
+			element = 'CLASS'
+			excludes = [
+				'*.config.*',
+				'*.constants.*',
+				'*.dto.*',
+				'*.entity.*',
+				'*.HolidayKeeperApplication',
+				'*.scheduler.*',
+				'*.infrastructure.persistence.*'
+			]
+			limit {
+				counter = 'LINE'
+				value = 'COVEREDRATIO'
+				minimum = 0.70
+			}
+		}
+	}
+}
+
+tasks.named('bootRun') {
+	def envVars = loadEnvFile()
+	envVars.each { key, value ->
+		systemProperty key, value
+	}
+}
