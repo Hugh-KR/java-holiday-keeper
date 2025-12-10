@@ -3,14 +3,12 @@
 ## 📋 프로젝트 개요
 
 Holiday Keeper는 [Nager.Date API](https://date.nager.at/)를 활용하여 2020-2025년
-전 세계 공휴일 데이터를 수집하고 관리하는 Spring Boot 기반 REST API 서비스입니다
-.
+전 세계 공휴일 데이터를 수집하고 관리하는 Spring Boot 기반 REST API 서비스입니다.
 
 ### 주요 기능
 
 - ✅ **데이터 적재**: 최근 5년(2020-2025) 전 세계 공휴일 데이터 일괄 적재
-- 🔍 **검색**: 연도별, 국가별, 날짜 범위, 공휴일 타입 등 다양한 필터로 검색 (페
-  이징 지원)
+- 🔍 **검색**: 연도별, 국가별, 날짜 범위, 공휴일 타입 등 다양한 필터로 검색 (페이징 지원)
 - 🔄 **재동기화**: 특정 연도·국가 데이터를 외부 API에서 재조회하여 업데이트
 - 🗑️ **삭제**: 특정 연도·국가의 공휴일 레코드 삭제
 - ⏰ **배치 자동화**: 매년 1월 2일 01:00 KST에 전년도·금년도 데이터 자동 동기화
@@ -95,8 +93,7 @@ erDiagram
 
 - `idx_country_code` (country_code) - UNIQUE
 - `idx_country_year` (country_id, holiday_year) - 복합 인덱스
-- `idx_country_code_year` (country_code, holiday_year) - 복합 인덱스 (성능 최적
-  화)
+- `idx_country_code_year` (country_code, holiday_year) - 복합 인덱스 (성능 최적화)
 - `idx_date` (date)
 - `idx_type` (types)
 
@@ -122,13 +119,7 @@ erDiagram
 - **총 테스트 파일**: 7개
 - **총 테스트 메서드**: 36개
 - **테스트 상태**: ✅ 모두 통과
-- **테스트 커버리지**: **95%** (비즈니스 로직 기준)
-
-| 패키지            | 커버리지 | 상태 |
-| ----------------- | -------- | ---- |
-| `service`         | 95%      | ✅   |
-| `api.controller`  | 90%      | ✅   |
-| `external.client` | 100%     | ✅   |
+- **테스트 커버리지**: **90%** (비즈니스 로직 기준)
 
 ### 테스트 실행
 
@@ -248,12 +239,9 @@ sequenceDiagram
 
 **핵심 설계 포인트**
 
-- **Querydsl 활용**: 타입 안전한 동적 쿼리 생성 (조건이 없어도, 하나만 있어도,
-  여러 개 있어도 모두 처리)
-- **Fetch Join**: Country 정보를 한 번에 조회하여 N+1 문제 해결 (21번 쿼리 → 1번
-  쿼리)
-- **인덱스 활용**: 자주 사용되는 검색 조건에 인덱스 적용 (Full Table Scan →
-  Index Scan)
+- **Querydsl 활용**: 타입 안전한 동적 쿼리 생성 (조건이 없어도, 하나만 있어도, 여러 개 있어도 모두 처리)
+- **Fetch Join**: Country 정보를 한 번에 조회하여 N+1 문제 해결 (21번 쿼리 → 1번 쿼리)
+- **인덱스 활용**: 자주 사용되는 검색 조건에 인덱스 적용 (Full Table Scan → Index Scan)
 
 ### 3. 재동기화 (요구사항: 특정 연도·국가 Upsert)
 
@@ -316,8 +304,7 @@ sequenceDiagram
 **핵심 설계 포인트**
 
 - **Upsert 로직**: 기존 데이터 유지하면서 변경사항만 업데이트 (중복 방지)
-- **데이터 정합성**: 외부 API에서 제거된 공휴일도 자동 삭제하여 DB와 외부 API 동
-  기화
+- **데이터 정합성**: 외부 API에서 제거된 공휴일도 자동 삭제하여 DB와 외부 API 동기화
 - **인덱스 활용**: idx_country_code_year 복합 인덱스로 빠른 조회
 
 ### 4. 삭제 (요구사항: 특정 연도·국가 레코드 전체 삭제)
@@ -444,8 +431,7 @@ sequenceDiagram
 
 ### 3. 상수 관리 체계화
 
-- **Enum/Interface 기반 상수 관리**: `ErrorMessage`, `LogMessage`,
-  `SuccessMessage` 등
+- **Enum/Interface 기반 상수 관리**: `ErrorMessage`, `LogMessage`,`SuccessMessage` 등
 - 하드코딩된 텍스트 제거로 유지보수성 향상
 - 일관성 보장 및 다국어 지원 용이
 
@@ -499,18 +485,16 @@ sequenceDiagram
 
    **특정 국가/연도 조회 시나리오 (예: KR/2024, 약 15개 결과)**
 
-   - 개선 전: Full Table Scan으로 10,000개 행 모두 접근 = **10,000번 메모리 접
-     근**
+   - 개선 전: Full Table Scan으로 10,000개 행 모두 접근 = **10,000번 메모리 접근**
    - 개선 후: B-Tree 인덱스로 필요한 행만 접근 = **13-15번 메모리 접근**
    - 효과: 메모리 접근 횟수 **99.85% 감소** (10,000번 → 13-15번)
    - 시간 복잡도: O(n) → O(log n)
-
+   
 4. **불필요한 쿼리 제거**
 
    **국가 코드 조회 시나리오 (100개 국가)**
 
-   - 개선 전: 100개 Country 엔티티 전체 로드 (id, countryCode, name) = **약
-     3KB**
+   - 개선 전: 100개 Country 엔티티 전체 로드 (id, countryCode, name) = **약 3KB**
    - 개선 후: 100개 String만 조회 (countryCode) = **약 0.3KB**
    - 효과: 메모리 사용량 **90% 감소**
 
@@ -555,8 +539,7 @@ holiday-keeper/
 
 ## 🔧 주요 설계 포인트
 
-1. **엔티티 설계**: Country와 PublicHoliday 분리 (정규화), countryCode 중복 저장
-   (검색 성능)
+1. **엔티티 설계**: Country와 PublicHoliday 분리 (정규화), countryCode 중복 저장 (검색 성능)
 2. **Querydsl 활용**: 동적 쿼리 작성으로 유연한 검색 기능 구현
 3. **배치 스케줄러**: Spring Scheduling을 활용한 자동 동기화
 4. **예외 처리**: 전역 예외 핸들러로 일관된 에러 응답 제공
